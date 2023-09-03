@@ -1,0 +1,17 @@
+{
+  "compilerOptions": {
+    "module": "ES2022",
+    "esModuleInterop": true,
+    "target": "es2022",
+    "sourceMap": true,
+    "moduleResolution": "node",
+    "outDir": "dist"
+  },
+  "lib": ["es2015"],
+  "ts-node": {
+    "esm": true,
+    "compilerOptions": {
+      "module": "nodenext",
+    }
+  }
+}
