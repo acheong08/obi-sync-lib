@@ -16,6 +16,7 @@ export class Vault {
   initial: boolean;
   files_index: Map<string, File>; // Map of file path to file
   labels_queue: label[];
+  version_updated: boolean = false;
 
   websocket: WebSocket;
 
@@ -56,14 +57,18 @@ export class Vault {
         if (message.op === "ready") {
           ready = true;
           if (message.version < this.version) {
-            // Send local files
+            // Send local files if we have a newer version
             for (const file of this.files_index.values()) {
               this.websocket.send(
                 JSON.stringify({
-                  op: "pull",
-                  file: file,
+                  op: "push",
+                  pieces: file.size > 0 ? 1 : 0,
+                  file,
                 })
               );
+              if (file.size > 0) {
+                this.websocket.send(file.data);
+              }
             }
           }
         }
@@ -86,6 +91,11 @@ export class Vault {
                   uid: file.uid,
                 })
               );
+              // Add new label to wait for binary data
+              this.labels_queue.push({
+                op: "pull",
+                metadata: file,
+              });
             }
           }
         }
@@ -93,6 +103,35 @@ export class Vault {
         // Get first label in labels queue
         const label = this.labels_queue.shift();
         switch (label.op) {
+          case "pull": {
+            // Get hash, size, and pieces from message
+            const { hash, _, pieces } = message;
+            // Get file from index
+            const file = this.files_index.get(label.metadata.path);
+            if (
+              (!file || file.hash !== hash) &&
+              !(file.deleted && !file.deleted) &&
+              pieces > 0
+            ) {
+              // Add new label to wait for binary data
+              this.labels_queue.push({
+                op: "pull_binary",
+                metadata: label.metadata,
+              });
+            }
+          }
+          case "pull_binary": {
+            // Get file metadata
+            const file = label.metadata as File;
+            // Get file data
+            file.data = message as Blob;
+            // Add file to index
+            this.files_index.set(file.path, file);
+            if (!this.version_updated) {
+              this.version_updated = true;
+              this.version = file.modified;
+            }
+          }
         }
       }
     };
@@ -111,5 +150,5 @@ export interface File {
   deleted: boolean;
   newest?: boolean;
   is_snapshot?: boolean;
-  data?: Uint8Array;
+  data?: Blob;
 }
