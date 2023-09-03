@@ -1,13 +1,6 @@
-export class User {
-  Token: string;
-  Name: string;
-  Email: string;
-  constructor(token: string, name: string, email: string) {
-    this.Token = token;
-    this.Name = name;
-    this.Email = email;
-  }
-}
+import { Vault } from "./vault";
+import { User } from "./user";
+
 
 // Create an ObiVault class
 export class ObiVault {
@@ -126,32 +119,3 @@ export class ObiVault {
     return true;
   }
 }
-
-export interface Vault {
-  id: string;
-  user_email: string;
-  created: number;
-  host: string;
-  name: string;
-  password: string;
-  salt: string;
-  size: number;
-  version: number;
-  keyhash: string;
-}
-export interface File {
-    uid: number;
-    vault_id: string;
-    hash: string;
-    path: string;
-    extension: string;
-    size: number;
-    created: number;
-    modified: number;
-    folder: boolean;
-    deleted: boolean;
-    newest?: boolean;
-    is_snapshot?: boolean;
-    data?: Uint8Array;
-  }
-  
