@@ -15,6 +15,7 @@ export interface User {
   email: string;
   password: string;
   license: string;
+  token: string;
 }
 export interface File {
     uid: number;
