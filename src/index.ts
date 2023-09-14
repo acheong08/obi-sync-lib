@@ -102,9 +102,9 @@ export class ObiSync {
   }
   // Only call if password and salt weren't defined
   public async access_vault(
+    vault_uid: string,
     password: string,
-    salt: string,
-    vault_uid: string
+    salt: string
   ): Promise<boolean> {
     const keyhash = await MakeKeyHash(password, salt);
     const response = await fetch(this.endpoint + "/vault/access", {
@@ -131,6 +131,9 @@ export class ObiVault {
   private vault: Vault;
   private endpoint: string;
   private token: string;
+  private websocket?: WebSocket;
+  private dataCache?: DataCache;
+  private nextLabel?: string;
   constructor(vault: Vault, endpoint: string, token: string) {
     if (!vault.password && !vault.keyhash) {
       throw new Error("Vault is not unlocked");
@@ -140,4 +143,32 @@ export class ObiVault {
     this.token = token;
   }
   // TODO: Implement websocket
+  public async Connect(pushCallback: Function): Promise<void> {
+    this.websocket = new WebSocket(this.endpoint + "/");
+    this.websocket.onmessage = (event) => {
+      if (typeof event.data === "string") {
+        let data = JSON.parse(event.data);
+        if (data.op) {
+          // Handle operations
+          switch (data.op) {
+            case "push": {
+              pushCallback(data);
+            }
+          }
+        } else {
+          switch (this.nextLabel) {
+            case "pull.metadata": {
+            }
+            case "pull.data": {
+            }
+          }
+        }
+      }
+    };
+  }
+}
+
+interface DataCache {
+  text: string;
+  data: Uint8Array;
 }
