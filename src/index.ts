@@ -1,5 +1,7 @@
 import { MakeKeyHash } from "./crypt";
 import { User, Vault } from "./types";
+import { EventEmitter } from "events";
+import { pEvent } from "p-event";
 
 export class ObiSync {
   private endpoint: string;
@@ -132,7 +134,7 @@ export class ObiVault {
   private endpoint: string;
   private token: string;
   private websocket?: WebSocket;
-  private dataCache?: DataCache;
+  private emmiter: EventEmitter;
   private nextLabel?: string;
   private pushCallback: Function = (data: any) => {};
   constructor(vault: Vault, endpoint: string, token: string) {
@@ -142,6 +144,7 @@ export class ObiVault {
     this.vault = vault;
     this.endpoint = endpoint;
     this.token = token;
+    this.emmiter = new EventEmitter();
   }
   // TODO: Implement websocket
   public async Connect(): Promise<void> {
@@ -159,13 +162,18 @@ export class ObiVault {
         } else {
           switch (this.nextLabel) {
             case "pull.metadata": {
+              // Do some stuff
+
+              // Emit event with metadata
+              this.emmiter.emit("pull.metadata", data);
             }
           }
         }
       } else {
         // Handle binary data
         if (this.nextLabel === "pull.data") {
-          this.dataCache!.data = new Uint8Array(event.data);
+          // Emit event with data
+          this.emmiter.emit("pull.data", event.data);
         } else {
           throw new Error("Unexpected binary data");
         }
@@ -175,9 +183,17 @@ export class ObiVault {
   public async onpush(callback: Function): Promise<void> {
     this.pushCallback = callback;
   }
-}
+  public async pull(uid: number): Promise<File> {
+    // Send pull request
 
-interface DataCache {
-  text: string;
-  data: Uint8Array;
+    // Wait for metadata
+    let f = await pEvent(this.emmiter, "pull.metadata");
+    if (f.pieces === 0) {
+      // No data
+      return f as File;
+    }
+    let d = await pEvent(this.emmiter, "pull.data");
+    f.data = d;
+    return f as File;
+  }
 }

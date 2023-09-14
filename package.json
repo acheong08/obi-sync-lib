@@ -12,5 +12,8 @@
   "keywords": [],
   "author": "Antonio Cheong",
   "license": "ISC",
-  "description": ""
+  "description": "",
+  "dependencies": {
+    "p-event": "^6.0.0"
+  }
 }
