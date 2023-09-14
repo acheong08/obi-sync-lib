@@ -134,6 +134,7 @@ export class ObiVault {
   private websocket?: WebSocket;
   private dataCache?: DataCache;
   private nextLabel?: string;
+  private pushCallback: Function = (data: any) => {};
   constructor(vault: Vault, endpoint: string, token: string) {
     if (!vault.password && !vault.keyhash) {
       throw new Error("Vault is not unlocked");
@@ -143,7 +144,7 @@ export class ObiVault {
     this.token = token;
   }
   // TODO: Implement websocket
-  public async Connect(pushCallback: Function): Promise<void> {
+  public async Connect(): Promise<void> {
     this.websocket = new WebSocket(this.endpoint + "/");
     this.websocket.onmessage = (event) => {
       if (typeof event.data === "string") {
@@ -152,19 +153,27 @@ export class ObiVault {
           // Handle operations
           switch (data.op) {
             case "push": {
-              pushCallback(data);
+              this.pushCallback(data);
             }
           }
         } else {
           switch (this.nextLabel) {
             case "pull.metadata": {
             }
-            case "pull.data": {
-            }
           }
+        }
+      } else {
+        // Handle binary data
+        if (this.nextLabel === "pull.data") {
+          this.dataCache!.data = new Uint8Array(event.data);
+        } else {
+          throw new Error("Unexpected binary data");
         }
       }
     };
+  }
+  public async onpush(callback: Function): Promise<void> {
+    this.pushCallback = callback;
   }
 }
 
