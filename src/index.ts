@@ -137,6 +137,7 @@ export class ObiVault {
   private emmiter: EventEmitter;
   private nextLabel?: string;
   private pushCallback: Function = (data: any) => {};
+  private ready: boolean = false;
   constructor(vault: Vault, endpoint: string, token: string) {
     if (!vault.password && !vault.keyhash) {
       throw new Error("Vault is not unlocked");
@@ -147,11 +148,36 @@ export class ObiVault {
     this.emmiter = new EventEmitter();
   }
   // TODO: Implement websocket
-  public async Connect(): Promise<void> {
+  public async Connect(isInitialConnection: boolean): Promise<void> {
     this.websocket = new WebSocket(this.endpoint + "/");
+
+    this.websocket.onopen = () => {
+      this.websocket?.send(
+        JSON.stringify({
+          op: "init",
+          token: this.token,
+          id: this.vault.id,
+          keyhash: this.vault.keyhash,
+          version: this.vault.version,
+          initial: isInitialConnection,
+          device: "obi-sync-lib",
+        })
+      );
+    };
+
     this.websocket.onmessage = (event) => {
       if (typeof event.data === "string") {
         let data = JSON.parse(event.data);
+        if (data.error) {
+          throw new Error(data.error);
+        }
+        if (!this.ready) {
+          if (data.op === "ready") {
+            this.ready = true;
+            this.vault.version = data.version;
+          }
+          return;
+        }
         if (data.op) {
           // Handle operations
           switch (data.op) {
@@ -180,20 +206,28 @@ export class ObiVault {
       }
     };
   }
-  public async onpush(callback: Function): Promise<void> {
+
+  public getVersion(): number {
+    return this.vault.version;
+  }
+
+  public onpush(callback: Function): void {
     this.pushCallback = callback;
   }
   public async pull(uid: number): Promise<File> {
     // Send pull request
-
+    this.websocket?.send(
+      JSON.stringify({
+        op: "pull",
+        uid,
+      })
+    );
     // Wait for metadata
     let f = await pEvent(this.emmiter, "pull.metadata");
-    if (f.pieces === 0) {
-      // No data
-      return f as File;
+    if (f.pieces !== 0) {
+      let d = await pEvent(this.emmiter, "pull.data");
+      f.data = d;
     }
-    let d = await pEvent(this.emmiter, "pull.data");
-    f.data = d;
     return f as File;
   }
 }
