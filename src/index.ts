@@ -28,6 +28,10 @@ export class ObiSync {
     return true;
   }
 
+  public getUser(): User | undefined {
+    return this.user;
+  }
+
   public async list_vaults(): Promise<Vault[]> {
     if (!this.user) {
       throw new Error("Not logged in");
@@ -127,6 +131,10 @@ export class ObiSync {
     }
     return true;
   }
+
+  public async get_vault(vault: Vault): Promise<ObiVault> {
+    return new ObiVault(vault, this.endpoint, this.user?.token!);
+  }
 }
 
 export class ObiVault {
@@ -142,6 +150,7 @@ export class ObiVault {
     if (!vault.password && !vault.keyhash) {
       throw new Error("Vault is not unlocked");
     }
+
     this.vault = vault;
     this.endpoint = endpoint;
     this.token = token;
@@ -149,6 +158,12 @@ export class ObiVault {
   }
   // TODO: Implement websocket
   public async Connect(isInitialConnection: boolean): Promise<void> {
+    if (!this.vault.keyhash) {
+      this.vault.keyhash = await MakeKeyHash(
+        this.vault.password!,
+        this.vault.salt!
+      );
+    }
     this.websocket = new WebSocket(this.endpoint + "/");
 
     this.websocket.onopen = () => {
