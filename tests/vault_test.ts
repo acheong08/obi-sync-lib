@@ -1,6 +1,6 @@
 import { ObiSync } from "../src/";
 
-const endpoint = "https://obsidian.duti.me";
+const endpoint = process.env.OBI_ENDPOINT || "http://localhost:3000";
 
 const sync = new ObiSync(endpoint);
 sync
