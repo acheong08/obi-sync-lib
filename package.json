@@ -10,7 +10,7 @@
   "types": "lib/index.d.ts",
   "scripts": {
     "build": "esbuild src/index.ts --bundle --outdir=./lib/ --platform=node --target=es2022 && tsc --emitDeclarationOnly --outDir lib",
-    "start": "node dist/index.js"
+    "test": "esbuild tests/vault_test.ts --bundle --outfile=./tests/vault_test.cjs --platform=node --target=es2022 && node tests/vault_test.cjs"
   },
   "keywords": [],
   "author": "Antonio Cheong",

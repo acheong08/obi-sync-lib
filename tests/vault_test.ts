@@ -1,4 +1,4 @@
-import { ObiSync } from "..";
+import { ObiSync } from "../src/";
 
 const endpoint = "https://obsidian.duti.me";
 
