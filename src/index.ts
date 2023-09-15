@@ -10,7 +10,7 @@ export class ObiSync {
     this.endpoint = endpoint;
   }
   public async signin(email: string, password: string): Promise<boolean> {
-    const response = await fetch(this.endpoint + "/signin", {
+    const response = await fetch(this.endpoint + "/user/signin", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
