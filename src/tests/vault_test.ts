@@ -1,11 +1,11 @@
-import { ObiSync } from "../src";
+import { ObiSync } from "..";
 
 const endpoint = "https://obsidian.duti.me";
 
 const sync = new ObiSync(endpoint);
 sync
   .signin(process.env.OBI_EMAIL!, process.env.OBI_PASSWORD!)
-  .then((signedIn) => {
+  .then((signedIn: boolean) => {
     console.log("Signed in:", signedIn);
   });
 
