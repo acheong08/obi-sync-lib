@@ -3,3 +3,6 @@ node_modules
 dist
 lib
 *.cjs
+*.mjs
+*.d.ts
+bun.lockb

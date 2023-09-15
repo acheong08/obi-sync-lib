@@ -1,16 +1,16 @@
 {
   "devDependencies": {
     "@types/node": "^20.6.0",
-    "esbuild": "^0.19.3",
-    "typescript": "^5.2.2"
+    "typescript": "^5.2.2",
+    "bun-types": "latest"
   },
   "name": "obi-sync-lib",
   "version": "1.0.0",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
   "scripts": {
-    "build": "esbuild src/index.ts --bundle --outdir=./lib/ --platform=node --target=es2022 && tsc --emitDeclarationOnly --outDir lib",
-    "test": "esbuild tests/vault_test.ts --bundle --outfile=./tests/vault_test.cjs --platform=node --target=es2022 && node tests/vault_test.cjs"
+    "build": "bun build ./src/index.ts --outdir ./lib/ --target node && tsc --emitDeclarationOnly --outDir lib",
+    "test": "bun build tests/vault_test.ts --outfile tests/vault_test.mjs --target node && node tests/vault_test.mjs"
   },
   "keywords": [],
   "author": "Antonio Cheong",
