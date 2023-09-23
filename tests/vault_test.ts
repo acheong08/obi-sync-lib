@@ -1,6 +1,6 @@
 import { ObiSync } from "../src/";
 import { MakeKeyHash } from "../src/crypt";
-import { BaseFile } from "../src/types";
+import { BaseFile, FileWithData } from "../src/types";
 
 // Create and run async block
 (async () => {
@@ -24,13 +24,33 @@ import { BaseFile } from "../src/types";
   );
   const vault = await sync.getVault(vaultInfo);
   const pullQueue: number[] = [];
+  let ready = false;
   vault.onpush(async (file) => {
     console.log("Pushed file:", file);
-    pullQueue.push(file.uid!);
+    if (!ready) {
+      pullQueue.push(file.uid!);
+    } else {
+      console.log(await vault.pull(file.uid!));
+    }
   });
   console.log("Connected:", await vault.Connect(true));
+  ready = true;
   for (const uid of pullQueue) {
-    console.log(uid)
+    console.log(uid);
     console.log(await vault.pull(uid));
   }
+  // Push example data
+  let f: FileWithData = {
+    vault_id: vaultInfo.id,
+    path: "test.txt",
+    extension: "txt",
+    size: 11,
+    created: new Date().getUTCMilliseconds(),
+    modified: new Date().getUTCMilliseconds(),
+    folder: false,
+    deleted: false,
+    data: Buffer.from("Hello World", "utf-8"),
+    hash: "hash",
+  };
+  console.log(await vault.push(f));
 })();

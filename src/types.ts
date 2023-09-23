@@ -31,9 +31,10 @@ export interface BaseFile {
   deleted: boolean;
 }
 export interface FileWithData extends BaseFile {
-  data?: Uint8Array; // Use Uint8Array to represent byte data
+  data?: Buffer; // Use Buffer to represent byte data
 }
 
 export interface FileSend extends BaseFile {
+  op: string;
   pieces: number;
 }

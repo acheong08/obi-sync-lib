@@ -262,6 +262,7 @@ export class ObiVault {
   public async push(file: FileWithData) {
     let data = file.data;
     let fileSend: FileSend = {
+      op: "push",
       uid: file.uid,
       vault_id: file.vault_id,
       hash: file.hash,
@@ -278,12 +279,7 @@ export class ObiVault {
       fileSend.pieces = 1;
     }
     // Send push request
-    this.websocket?.send(
-      JSON.stringify({
-        op: "push",
-        fileSend,
-      })
-    );
+    this.websocket?.send(JSON.stringify(fileSend));
     if (data) {
       await pEvent(this.emmiter, "next");
       // Send binary data
