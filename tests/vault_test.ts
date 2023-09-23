@@ -1,5 +1,6 @@
 import { ObiSync } from "../src/";
 import { MakeKeyHash } from "../src/crypt";
+import { BaseFile } from "../src/types";
 
 // Create and run async block
 (async () => {
@@ -15,5 +16,16 @@ import { MakeKeyHash } from "../src/crypt";
   console.log("Listing vaults...");
   const vaults = await sync.list_vaults();
   console.log("Vaults:", vaults);
-  const vault = vaults.vaults[0];
+  const vaultInfo = vaults.vaults[0];
+  // Try to access the vault
+  console.log("Accessing vault...");
+  console.log(
+    await sync.access_vault(vaultInfo.id, vaultInfo.password, vaultInfo.salt)
+  );
+  const vault = await sync.getVault(vaultInfo);
+  vault.onpush(async (file) => {
+    console.log("Pushed file:", file);
+  });
+  console.log("Connected:", await vault.Connect(true));
+  console.log(await vault.pull(1));
 })();

@@ -1,5 +1,5 @@
 import { MakeKeyHash } from "./crypt";
-import { User, Vault, FileWithData, FileSend } from "./types";
+import { User, Vault, FileWithData, FileSend, BaseFile } from "./types";
 import { EventEmitter } from "events";
 import { pEvent } from "p-event";
 
@@ -52,7 +52,7 @@ export class ObiSync {
     return data as {
       vaults: Vault[];
       shared: Vault[];
-    }
+    };
   }
 
   public async create_vault(name: string, password?: string): Promise<Vault> {
@@ -135,7 +135,7 @@ export class ObiSync {
     return true;
   }
 
-  public async get_vault(vault: Vault): Promise<ObiVault> {
+  public async getVault(vault: Vault): Promise<ObiVault> {
     return new ObiVault(vault, this.endpoint, this.user?.token!);
   }
 }
@@ -147,7 +147,7 @@ export class ObiVault {
   private websocket?: WebSocket;
   private emmiter: EventEmitter;
   private nextLabel?: string;
-  private pushCallback: Function = (data: any) => {};
+  private pushCallback: ((file: BaseFile) => void) | undefined;
   private ready: boolean = false;
   constructor(vault: Vault, endpoint: string, token: string) {
     if (!vault.password && !vault.keyhash) {
@@ -160,7 +160,7 @@ export class ObiVault {
     this.emmiter = new EventEmitter();
   }
   // TODO: Implement websocket
-  public async Connect(isInitialConnection: boolean): Promise<void> {
+  public async Connect(isInitialConnection: boolean): Promise<boolean> {
     if (!this.vault.keyhash) {
       this.vault.keyhash = await MakeKeyHash(
         this.vault.password!,
@@ -176,7 +176,7 @@ export class ObiVault {
           token: this.token,
           id: this.vault.id,
           keyhash: this.vault.keyhash,
-          version: this.vault.version,
+          version: this.vault.version || 0,
           initial: isInitialConnection,
           device: "obi-sync-lib",
         })
@@ -193,6 +193,8 @@ export class ObiVault {
           if (data.op === "ready") {
             this.ready = true;
             this.vault.version = data.version;
+            // Resolve promise
+            this.emmiter.emit("ready");
           }
           return;
         }
@@ -200,7 +202,9 @@ export class ObiVault {
           // Handle operations
           switch (data.op) {
             case "push": {
-              this.pushCallback(data);
+              if (this.pushCallback) {
+                this.pushCallback(data);
+              }
             }
           }
         } else {
@@ -226,13 +230,16 @@ export class ObiVault {
         }
       }
     };
+
+    await pEvent(this.emmiter, "ready");
+    return true;
   }
 
   public getVersion(): number {
     return this.vault.version;
   }
 
-  public onpush(callback: Function): void {
+  public onpush(callback: (file: BaseFile) => void) {
     this.pushCallback = callback;
   }
   public async pull(uid: number): Promise<FileWithData> {
