@@ -147,8 +147,8 @@ export class ObiVault {
   private websocket?: WebSocket;
   private emmiter: EventEmitter;
   private nextLabel?: string;
+  private nextData?: Buffer;
   private pushCallback: ((file: BaseFile) => void) | undefined;
-  private ready: boolean = false;
   constructor(vault: Vault, endpoint: string, token: string) {
     if (!vault.password && !vault.keyhash) {
       throw new Error("Vault is not unlocked");
@@ -189,15 +189,6 @@ export class ObiVault {
         if (data.error) {
           throw new Error(data.error);
         }
-        if (!this.ready) {
-          if (data.op === "ready") {
-            this.ready = true;
-            this.vault.version = data.version;
-            // Resolve promise
-            this.emmiter.emit("ready");
-          }
-          return;
-        }
         if (data.op) {
           // Handle operations
           switch (data.op) {
@@ -206,6 +197,11 @@ export class ObiVault {
                 this.pushCallback(data);
               }
             }
+            case "ready": {
+              this.vault.version = data.version;
+              // Resolve promise
+              this.emmiter.emit("ready");
+            }
           }
         } else {
           if (data.res === "next") {
@@ -213,21 +209,20 @@ export class ObiVault {
           }
           switch (this.nextLabel) {
             case "pull.metadata": {
-              // Do some stuff
-
               // Emit event with metadata
               this.emmiter.emit("pull.metadata", data);
+              this.nextLabel = "pull.data";
             }
           }
         }
       } else {
-        // Handle binary data
-        if (this.nextLabel === "pull.data") {
-          // Emit event with data
-          this.emmiter.emit("pull.data", event.data);
-        } else {
+        if (this.nextLabel !== "pull.data") {
           throw new Error("Unexpected binary data");
         }
+        this.nextData = Buffer.from(event.data);
+        // Note: setTimeout is being used because event listener must be defined before emmiting event
+        setTimeout(() => this.emmiter.emit("pull.data"), 0);
+        this.nextLabel = undefined;
       }
     };
 
@@ -242,8 +237,9 @@ export class ObiVault {
   public onpush(callback: (file: BaseFile) => void) {
     this.pushCallback = callback;
   }
-  public async pull(uid: number): Promise<FileWithData> {
+  public async pull(uid: number) {
     // Send pull request
+    this.nextLabel = "pull.metadata"; // Set before sending request to prevent race condition
     this.websocket?.send(
       JSON.stringify({
         op: "pull",
@@ -253,10 +249,15 @@ export class ObiVault {
     // Wait for metadata
     let f = await pEvent(this.emmiter, "pull.metadata");
     if (f.pieces !== 0) {
-      let d = await pEvent(this.emmiter, "pull.data");
-      f.data = d;
+      await pEvent(this.emmiter, "pull.data");
+      f.data = this.nextData;
     }
-    return f as FileWithData;
+    return {
+      hash: f.hash,
+      size: f.size,
+      pieces: f.pieces,
+      data: f.data,
+    };
   }
   public async push(file: FileWithData) {
     let data = file.data;

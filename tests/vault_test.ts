@@ -23,9 +23,14 @@ import { BaseFile } from "../src/types";
     await sync.access_vault(vaultInfo.id, vaultInfo.password, vaultInfo.salt)
   );
   const vault = await sync.getVault(vaultInfo);
+  const pullQueue: number[] = [];
   vault.onpush(async (file) => {
     console.log("Pushed file:", file);
+    pullQueue.push(file.uid!);
   });
   console.log("Connected:", await vault.Connect(true));
-  console.log(await vault.pull(1));
+  for (const uid of pullQueue) {
+    console.log(uid)
+    console.log(await vault.pull(uid));
+  }
 })();
