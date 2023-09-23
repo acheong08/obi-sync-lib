@@ -9,7 +9,7 @@ export class ObiSync {
   constructor(endpoint: string) {
     this.endpoint = endpoint;
   }
-  public async signin(email: string, password: string): Promise<boolean> {
+  public async signIn(email: string, password: string): Promise<boolean> {
     const response = await fetch(this.endpoint + "/user/signin", {
       method: "POST",
       headers: {
@@ -32,7 +32,7 @@ export class ObiSync {
     return this.user;
   }
 
-  public async list_vaults() {
+  public async getVaultList() {
     if (!this.user) {
       throw new Error("Not logged in");
     }
@@ -55,7 +55,7 @@ export class ObiSync {
     };
   }
 
-  public async create_vault(name: string, password?: string): Promise<Vault> {
+  public async createVault(name: string, password?: string): Promise<Vault> {
     if (!this.user) {
       throw new Error("Not logged in");
     }
@@ -92,7 +92,7 @@ export class ObiSync {
     return data as Vault;
   }
 
-  public async delete_vault(id: string): Promise<void> {
+  public async deleteVault(id: string): Promise<void> {
     const response = await fetch(this.endpoint + "/vault/delete", {
       method: "POST",
       headers: {
@@ -110,7 +110,7 @@ export class ObiSync {
     return;
   }
   // Only call if password and salt weren't defined
-  public async access_vault(
+  public async accessVault(
     vault_uid: string,
     password: string,
     salt: string
@@ -146,8 +146,8 @@ export class ObiVault {
   private token: string;
   private websocket?: WebSocket;
   private emmiter: EventEmitter;
-  private nextLabel?: string;
-  private nextData?: Buffer;
+  private next_label?: string;
+  private next_data?: Buffer;
   private pushCallback: ((file: BaseFile) => void) | undefined;
   constructor(vault: Vault, endpoint: string, token: string) {
     if (!vault.password && !vault.keyhash) {
@@ -207,22 +207,22 @@ export class ObiVault {
           if (data.res === "next") {
             this.emmiter.emit("next");
           }
-          switch (this.nextLabel) {
+          switch (this.next_label) {
             case "pull.metadata": {
               // Emit event with metadata
               this.emmiter.emit("pull.metadata", data);
-              this.nextLabel = "pull.data";
+              this.next_label = "pull.data";
             }
           }
         }
       } else {
-        if (this.nextLabel !== "pull.data") {
+        if (this.next_label !== "pull.data") {
           throw new Error("Unexpected binary data");
         }
-        this.nextData = Buffer.from(event.data);
+        this.next_data = Buffer.from(event.data);
         // Note: setTimeout is being used because event listener must be defined before emmiting event
         setTimeout(() => this.emmiter.emit("pull.data"), 0);
-        this.nextLabel = undefined;
+        this.next_label = undefined;
       }
     };
 
@@ -234,12 +234,12 @@ export class ObiVault {
     return this.vault.version;
   }
 
-  public onpush(callback: (file: BaseFile) => void) {
+  public onPush(callback: (file: BaseFile) => void) {
     this.pushCallback = callback;
   }
   public async pull(uid: number) {
     // Send pull request
-    this.nextLabel = "pull.metadata"; // Set before sending request to prevent race condition
+    this.next_label = "pull.metadata"; // Set before sending request to prevent race condition
     this.websocket?.send(
       JSON.stringify({
         op: "pull",
@@ -250,7 +250,7 @@ export class ObiVault {
     let f = await pEvent(this.emmiter, "pull.metadata");
     if (f.pieces !== 0) {
       await pEvent(this.emmiter, "pull.data");
-      f.data = this.nextData;
+      f.data = this.next_data;
     }
     return {
       hash: f.hash,

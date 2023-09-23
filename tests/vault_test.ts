@@ -11,21 +11,21 @@ import { BaseFile, FileWithData } from "../src/types";
   const sync = new ObiSync(endpoint);
   console.log(
     "Signed in:",
-    await sync.signin(process.env.OBI_EMAIL!, process.env.OBI_PASSWORD!)
+    await sync.signIn(process.env.OBI_EMAIL!, process.env.OBI_PASSWORD!)
   );
   console.log("Listing vaults...");
-  const vaults = await sync.list_vaults();
+  const vaults = await sync.getVaultList();
   console.log("Vaults:", vaults);
   const vaultInfo = vaults.vaults[0];
   // Try to access the vault
   console.log("Accessing vault...");
   console.log(
-    await sync.access_vault(vaultInfo.id, vaultInfo.password, vaultInfo.salt)
+    await sync.accessVault(vaultInfo.id, vaultInfo.password, vaultInfo.salt)
   );
   const vault = await sync.getVault(vaultInfo);
   const pullQueue: number[] = [];
   let ready = false;
-  vault.onpush(async (file) => {
+  vault.onPush(async (file) => {
     console.log("Pushed file:", file);
     if (!ready) {
       pullQueue.push(file.uid!);
