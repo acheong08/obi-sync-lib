@@ -32,7 +32,7 @@ export class ObiSync {
     return this.user;
   }
 
-  public async list_vaults(): Promise<Vault[]> {
+  public async list_vaults() {
     if (!this.user) {
       throw new Error("Not logged in");
     }
@@ -49,7 +49,10 @@ export class ObiSync {
     if (data.error) {
       throw new Error(data.error);
     }
-    return data as Vault[];
+    return data as {
+      vaults: Vault[];
+      shared: Vault[];
+    }
   }
 
   public async create_vault(name: string, password?: string): Promise<Vault> {

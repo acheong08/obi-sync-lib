@@ -15,4 +15,5 @@ import { MakeKeyHash } from "../src/crypt";
   console.log("Listing vaults...");
   const vaults = await sync.list_vaults();
   console.log("Vaults:", vaults);
+  const vault = vaults.vaults[0];
 })();
