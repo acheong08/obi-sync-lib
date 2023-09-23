@@ -17,16 +17,23 @@ export interface User {
   license: string;
   token: string;
 }
-export interface File {
-    uid: number;
-    vault_id: string;
-    hash: string;
-    path: string;
-    extension: string;
-    size: number;
-    created: number;
-    modified: number;
-    folder: boolean;
-    data?: Uint8Array; // Use Uint8Array to represent byte data
-  }
-  
+
+export interface BaseFile {
+  uid?: number;
+  vault_id: string;
+  hash: string;
+  path: string;
+  extension: string;
+  size: number;
+  created: number;
+  modified: number;
+  folder: boolean;
+  deleted: boolean;
+}
+export interface FileWithData extends BaseFile {
+  data?: Uint8Array; // Use Uint8Array to represent byte data
+}
+
+export interface FileSend extends BaseFile {
+  pieces: number;
+}

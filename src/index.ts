@@ -1,5 +1,5 @@
 import { MakeKeyHash } from "./crypt";
-import { User, Vault } from "./types";
+import { User, Vault, FileWithData, FileSend } from "./types";
 import { EventEmitter } from "events";
 import { pEvent } from "p-event";
 
@@ -201,6 +201,9 @@ export class ObiVault {
             }
           }
         } else {
+          if (data.res === "next") {
+            this.emmiter.emit("next");
+          }
           switch (this.nextLabel) {
             case "pull.metadata": {
               // Do some stuff
@@ -229,7 +232,7 @@ export class ObiVault {
   public onpush(callback: Function): void {
     this.pushCallback = callback;
   }
-  public async pull(uid: number): Promise<File> {
+  public async pull(uid: number): Promise<FileWithData> {
     // Send pull request
     this.websocket?.send(
       JSON.stringify({
@@ -243,6 +246,38 @@ export class ObiVault {
       let d = await pEvent(this.emmiter, "pull.data");
       f.data = d;
     }
-    return f as File;
+    return f as FileWithData;
+  }
+  public async push(file: FileWithData) {
+    let data = file.data;
+    let fileSend: FileSend = {
+      uid: file.uid,
+      vault_id: file.vault_id,
+      hash: file.hash,
+      path: file.path,
+      extension: file.extension,
+      size: file.size,
+      created: file.created,
+      modified: file.modified,
+      folder: file.folder,
+      deleted: file.deleted,
+      pieces: 0,
+    };
+    if (data) {
+      fileSend.pieces = 1;
+    }
+    // Send push request
+    this.websocket?.send(
+      JSON.stringify({
+        op: "push",
+        fileSend,
+      })
+    );
+    if (data) {
+      await pEvent(this.emmiter, "next");
+      // Send binary data
+      this.websocket?.send(data);
+    }
+    // Don't need to wait for anything else
   }
 }
