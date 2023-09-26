@@ -1,6 +1,6 @@
 import { ObiSync } from "../src/";
 import { MakeKeyHash } from "../src/crypt";
-import { BaseFile, FileWithData } from "../src/types";
+import { FileWithData } from "../src/types";
 
 // Create and run async block
 (async () => {

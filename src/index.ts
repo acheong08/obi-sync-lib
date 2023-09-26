@@ -2,7 +2,7 @@ import { MakeKeyHash } from "./crypt";
 import { User, Vault, FileWithData, FileSend, BaseFile } from "./types";
 import { EventEmitter } from "events";
 import { pEvent } from "p-event";
-
+import WebSocket from "ws";
 export class ObiSync {
   private endpoint: string;
   private user?: User;
@@ -219,7 +219,7 @@ export class ObiVault {
         if (this.next_label !== "pull.data") {
           throw new Error("Unexpected binary data");
         }
-        this.next_data = Buffer.from(event.data);
+        this.next_data = Buffer.from(event.data as ArrayBuffer);
         // Note: setTimeout is being used because event listener must be defined before emmiting event
         setTimeout(() => this.emmiter.emit("pull.data"), 0);
         this.next_label = undefined;

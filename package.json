@@ -10,7 +10,7 @@
   "types": "lib/index.d.ts",
   "scripts": {
     "build": "bun build ./src/index.ts --outdir ./lib/ --target node && tsc --emitDeclarationOnly --outDir lib",
-    "test": "bun build tests/vault_test.ts --outfile tests/vault_test.mjs --target node && node tests/vault_test.mjs"
+    "test": "bun build tests/vault_test.ts --outfile tests/vault_test.mjs --target node && ./mjs_workaround.sh && node tests/vault_test.mjs"
   },
   "keywords": [],
   "author": "Antonio Cheong",

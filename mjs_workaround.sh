@@ -1,0 +1,1 @@
+sed -i '1s/^/import { createRequire as createImportMetaRequire } from "module"; import.meta.require ||= (id) => createImportMetaRequire(import.meta.url)(id);\n/' tests/vault_test.mjs
